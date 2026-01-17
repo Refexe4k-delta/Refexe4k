@@ -1,0 +1,397 @@
+-- Full Hub: Enlarge Head (toggle semua kecuali kita) + Auto MS + DELETE + FPS BOOSTER OTOMATIS
+-- CLIENT SIDE ONLY | AMAN | FIX TOTAL
+
+------------------------------------------------
+-- SERVICES
+------------------------------------------------
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+
+------------------------------------------------
+-- CONFIG ENLARGE HEAD
+------------------------------------------------
+local HEAD_SIZE = Vector3.new(5,5,5)
+local HEAD_TRANSPARENCY = 0.7
+local Enlarged = false
+local OriginalData = {} -- simpan data original
+
+------------------------------------------------
+-- CONFIG AUTO MS
+------------------------------------------------
+local AutoMS_Running = false
+
+------------------------------------------------
+-- GUI
+------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "Refexe4KGui"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Toggle kecil
+local ToggleButton = Instance.new("TextButton", gui)
+ToggleButton.Size = UDim2.new(0,52,0,52)
+ToggleButton.Position = UDim2.new(0,20,0.5,-26)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
+ToggleButton.Text = ""
+ToggleButton.Active = true
+Instance.new("UIAspectRatioConstraint", ToggleButton).AspectRatio = 1
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(1,0)
+
+-- MainFrame
+local MainFrame = Instance.new("Frame", gui)
+MainFrame.Size = UDim2.new(0,298,0,260)
+MainFrame.Position = UDim2.new(0.5,-149,0.5,-130)
+MainFrame.BackgroundColor3 = Color3.fromRGB(38,38,38)
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = false
+MainFrame.Active = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,14)
+
+-- Title
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1,0,0,38)
+Title.BackgroundTransparency = 1
+Title.Text = "refexe4k hub"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.TextScaled = true
+Title.Font = Enum.Font.GothamBold
+
+-- Content
+local Content = Instance.new("Frame", MainFrame)
+Content.Size = UDim2.new(1,0,1,-38)
+Content.Position = UDim2.new(0,0,0,38)
+Content.BackgroundTransparency = 1
+
+local Layout = Instance.new("UIListLayout", Content)
+Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Layout.Padding = UDim.new(0,10)
+
+------------------------------------------------
+-- BUTTON TEMPLATE
+------------------------------------------------
+local function makeButton(text)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(1,-40,0,40)
+	b.BackgroundColor3 = Color3.fromRGB(55,55,55)
+	b.Text = text
+	b.TextColor3 = Color3.fromRGB(255,255,255)
+	b.TextScaled = true
+	b.Font = Enum.Font.Gotham
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+	b.Parent = Content
+	return b
+end
+
+------------------------------------------------
+-- BUTTONS
+------------------------------------------------
+local EnlargeButton = makeButton("Enlarge Head : OFF")
+local AutoMSButton  = makeButton("AUTO MS : OFF")
+local DeleteButton  = makeButton("DELETE")
+
+------------------------------------------------
+-- DRAG
+------------------------------------------------
+local function makeDraggable(frame)
+	local dragging, dragStart, startPos
+	frame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - dragStart
+			frame.Position = UDim2.new(startPos.X.Scale,startPos.X.Offset + delta.X,startPos.Y.Scale,startPos.Y.Offset + delta.Y)
+		end
+	end)
+end
+
+makeDraggable(ToggleButton)
+makeDraggable(MainFrame)
+
+ToggleButton.MouseButton1Click:Connect(function()
+	MainFrame.Visible = not MainFrame.Visible
+end)
+
+------------------------------------------------
+-- ENLARGE HEAD (TOGGLE KECUALI LOCALPLAYER)
+------------------------------------------------
+local function applyEnlarge(player)
+	if player == LocalPlayer then return end -- skip local player
+	if not player.Character then return end
+	local head = player.Character:FindFirstChild("Head")
+	if not head then return end
+
+	if not OriginalData[player] then
+		OriginalData[player] = {
+			Size = head.Size,
+			Transparency = head.Transparency,
+			Material = head.Material,
+			Color = head.Color
+		}
+	end
+
+	if Enlarged then
+		head.Size = HEAD_SIZE
+		head.Transparency = HEAD_TRANSPARENCY
+		head.Material = Enum.Material.Neon
+		head.Color = Color3.fromRGB(255,0,0)
+	else
+		local d = OriginalData[player]
+		head.Size = d.Size
+		head.Transparency = d.Transparency
+		head.Material = d.Material
+		head.Color = d.Color
+	end
+	head.CanCollide = false
+end
+
+local function toggleAllHeads()
+	for _, player in ipairs(Players:GetPlayers()) do
+		applyEnlarge(player)
+		player.CharacterAdded:Connect(function()
+			task.wait(0.5)
+			applyEnlarge(player)
+		end)
+	end
+end
+
+EnlargeButton.MouseButton1Click:Connect(function()
+	Enlarged = not Enlarged
+	EnlargeButton.Text = Enlarged and "Enlarge Head : ON" or "Enlarge Head : OFF"
+	toggleAllHeads()
+end)
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(0.5)
+		applyEnlarge(player)
+	end)
+end)
+
+------------------------------------------------
+-- AUTO MS
+------------------------------------------------
+local function pressE()
+	VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+	task.wait(0.08)
+	VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+local function findTool(name)
+	return LocalPlayer.Backpack:FindFirstChild(name)
+		or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild(name))
+end
+
+local function equip(tool)
+	if tool and LocalPlayer.Character then
+		tool.Parent = LocalPlayer.Character
+	end
+end
+
+local function runAutoMS()
+	while AutoMS_Running do
+		local water = findTool("Water")
+		if water then equip(water) task.wait(0.15) pressE() end
+		task.wait(22)
+		if not AutoMS_Running then break end
+
+		local sugar = findTool("Sugar Block Bag")
+		if sugar then equip(sugar) task.wait(0.15) pressE() end
+		task.wait(1)
+
+		local gelatin = findTool("Gelatin")
+		if gelatin then equip(gelatin) task.wait(0.15) pressE() end
+		task.wait(47)
+
+		local empty = findTool("Empty Bag")
+		if empty then equip(empty) task.wait(0.15) pressE() end
+	end
+end
+
+AutoMSButton.MouseButton1Click:Connect(function()
+	AutoMS_Running = not AutoMS_Running
+	AutoMSButton.Text = AutoMS_Running and "AUTO MS : ON" or "AUTO MS : OFF"
+	if AutoMS_Running then
+		task.spawn(runAutoMS)
+	end
+end)
+
+------------------------------------------------
+-- DELETE TOOL
+------------------------------------------------
+local DeleteTool
+local Mouse
+local Selected
+local Original = {}
+
+local DeleteGui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+DeleteGui.ResetOnSpawn = false
+
+local Yes = Instance.new("TextButton", DeleteGui)
+Yes.Size = UDim2.new(0,120,0,45)
+Yes.Position = UDim2.new(1,-260,0.5,-30)
+Yes.Text = "YES"
+Yes.BackgroundColor3 = Color3.fromRGB(200,0,0)
+Yes.TextColor3 = Color3.new(1,1,1)
+Yes.Visible = false
+Instance.new("UICorner", Yes)
+
+local No = Instance.new("TextButton", DeleteGui)
+No.Size = UDim2.new(0,120,0,45)
+No.Position = UDim2.new(1,-130,0.5,-30)
+No.Text = "NO"
+No.BackgroundColor3 = Color3.fromRGB(60,60,60)
+No.TextColor3 = Color3.new(1,1,1)
+No.Visible = false
+Instance.new("UICorner", No)
+
+local function resetDelete()
+	if Selected and Original[Selected] then
+		Selected.Color = Original[Selected].Color
+		Selected.Transparency = Original[Selected].Transparency
+	end
+	Selected = nil
+	Original = {}
+	Yes.Visible = false
+	No.Visible = false
+end
+
+DeleteButton.MouseButton1Click:Connect(function()
+	if DeleteTool then DeleteTool:Destroy() end
+
+	DeleteTool = Instance.new("Tool")
+	DeleteTool.Name = "DELETE"
+	DeleteTool.RequiresHandle = false
+	DeleteTool.CanBeDropped = false
+	DeleteTool.Parent = LocalPlayer.Backpack
+
+	DeleteTool.Equipped:Connect(function(m)
+		Mouse = m
+	end)
+
+	DeleteTool.Unequipped:Connect(resetDelete)
+
+	DeleteTool.Activated:Connect(function()
+		if not Mouse then return end
+		local t = Mouse.Target
+		if not t or not t:IsA("BasePart") then return end
+
+		resetDelete()
+		Selected = t
+		Original[t] = {Color = t.Color, Transparency = t.Transparency}
+		t.Color = Color3.fromRGB(255,0,0)
+		t.Transparency = 0.3
+		Yes.Visible = true
+		No.Visible = true
+	end)
+end)
+
+Yes.MouseButton1Click:Connect(function()
+	if Selected then Selected:Destroy() end
+	resetDelete()
+end)
+
+No.MouseButton1Click:Connect(resetDelete)
+
+------------------------------------------------
+-- SAFE CLIENT-SIDE FPS BOOSTER + CHARACTER GLOSSY
+-- OTOMATIS JALAN TANPA TOMBOL
+------------------------------------------------
+local function destroyVisuals(obj)
+	for _, v in ipairs(obj:GetDescendants()) do
+		if v:IsA("Texture") or v:IsA("Decal") then
+			pcall(function() v:Destroy() end)
+		end
+	end
+end
+
+destroyVisuals(Workspace)
+destroyVisuals(Lighting)
+
+Workspace.DescendantAdded:Connect(function(v)
+	if v:IsA("Texture") or v:IsA("Decal") then
+		task.wait()
+		pcall(function() v:Destroy() end)
+	end
+end)
+
+Lighting.DescendantAdded:Connect(function(v)
+	if v:IsA("Texture") or v:IsA("Decal") then
+		task.wait()
+		pcall(function() v:Destroy() end)
+	end
+end)
+
+pcall(function()
+	Lighting.GlobalShadows = false
+	Lighting.FogEnd = 9e9
+	Lighting.Brightness = 1
+	Lighting.EnvironmentDiffuseScale = 0
+	Lighting.EnvironmentSpecularScale = 0
+	Lighting.ClockTime = 14
+end)
+
+for _, v in ipairs(Lighting:GetChildren()) do
+	if v:IsA("BloomEffect") 
+	or v:IsA("SunRaysEffect") 
+	or v:IsA("ColorCorrectionEffect") 
+	or v:IsA("DepthOfFieldEffect") 
+	or v:IsA("Atmosphere") then
+		pcall(function() v:Destroy() end)
+	end
+end
+
+for _, obj in ipairs(Workspace:GetDescendants()) do
+	if (obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam")) and not obj:IsDescendantOf(LocalPlayer.Character) then
+		pcall(function() obj:Destroy() end)
+	end
+end
+
+for _, part in ipairs(Workspace:GetDescendants()) do
+	if part:IsA("BasePart") and not part:IsDescendantOf(LocalPlayer.Character) then
+		part.Material = Enum.Material.SmoothPlastic
+		part.Reflectance = 0
+	end
+end
+
+local function makeCharacterGlossy(obj)
+	for _, part in ipairs(obj:GetDescendants()) do
+		if part:IsA("BasePart") then
+			pcall(function()
+				part.Material = Enum.Material.SmoothPlastic
+				part.Reflectance = 0.2
+			end)
+		end
+	end
+end
+
+local function applyCharacter(character)
+	makeCharacterGlossy(character)
+end
+
+local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+applyCharacter(character)
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+	task.wait(0.5)
+	applyCharacter(char)
+end)
+
+print("[SAFE FPS BOOSTER + CHARACTER GLOSSY] Applied successfully!")
