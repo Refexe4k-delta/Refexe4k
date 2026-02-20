@@ -1,0 +1,111 @@
+--// CLIENT-SIDE FPS BOOSTER (LIGHTING OFF)
+--// Support Mobile + Delta Executor
+--// Visual only - NO server changes
+
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+
+--==============================
+-- REMOVE ALL TEXTURE & DECAL (CLIENT SIDE)
+--==============================
+local function clearVisuals(root)
+	for _, v in ipairs(root:GetDescendants()) do
+		if v:IsA("Texture") or v:IsA("Decal") then
+			v.Transparency = 1
+			v.Texture = ""
+		elseif v:IsA("SurfaceAppearance") then
+			v:Destroy()
+		end
+	end
+end
+
+clearVisuals(workspace)
+
+workspace.DescendantAdded:Connect(function(v)
+	task.wait()
+	if v:IsA("Texture") or v:IsA("Decal") then
+		v.Transparency = 1
+		v.Texture = ""
+	elseif v:IsA("SurfaceAppearance") then
+		v:Destroy()
+	end
+end)
+
+--==============================
+-- CHARACTER GLOSSY (VISUAL ONLY)
+--==============================
+local function glossyCharacter(char)
+	for _, v in ipairs(char:GetDescendants()) do
+		if v:IsA("BasePart") then
+			v.Material = Enum.Material.SmoothPlastic
+			v.Reflectance = 0.3
+		elseif v:IsA("Decal") or v:IsA("Texture") then
+			v.Transparency = 1
+		elseif v:IsA("SurfaceAppearance") then
+			v:Destroy()
+		end
+	end
+end
+
+if LocalPlayer.Character then
+	glossyCharacter(LocalPlayer.Character)
+end
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+	task.wait(1)
+	glossyCharacter(char)
+end)
+
+--==============================
+-- LIGHTING OFF (EXTREME)
+--==============================
+Lighting.GlobalShadows = false
+Lighting.Brightness = 1
+Lighting.ClockTime = 12
+Lighting.FogEnd = 9e9
+Lighting.ExposureCompensation = 0
+Lighting.EnvironmentDiffuseScale = 0
+Lighting.EnvironmentSpecularScale = 0
+Lighting.OutdoorAmbient = Color3.fromRGB(150,150,150)
+Lighting.Ambient = Color3.fromRGB(150,150,150)
+
+-- Disable & destroy lighting effects
+for _, v in ipairs(Lighting:GetChildren()) do
+	if v:IsA("BloomEffect")
+		or v:IsA("BlurEffect")
+		or v:IsA("SunRaysEffect")
+		or v:IsA("DepthOfFieldEffect")
+		or v:IsA("ColorCorrectionEffect")
+		or v:IsA("Atmosphere") then
+		v.Enabled = false
+		v:Destroy()
+	end
+end
+
+Lighting.ChildAdded:Connect(function(v)
+	task.wait()
+	if v:IsA("BloomEffect")
+		or v:IsA("BlurEffect")
+		or v:IsA("SunRaysEffect")
+		or v:IsA("DepthOfFieldEffect")
+		or v:IsA("ColorCorrectionEffect")
+		or v:IsA("Atmosphere") then
+		v:Destroy()
+	end
+end)
+
+--==============================
+-- EXTRA FPS PUSH (CLIENT ONLY)
+--==============================
+settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+
+pcall(function()
+	sethiddenproperty(Lighting, "Technology", Enum.Technology.Compatibility)
+end)
+
+RunService:Set3dRenderingEnabled(true)
+
+print("FPS BOOSTER AKTIF | LIGHTING OFF | CLIENT SIDE ONLY")
