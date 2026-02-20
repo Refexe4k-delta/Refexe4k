@@ -1,0 +1,107 @@
+--// CLIENT SIDE DELETE (PER ORANG)
+--// DELETE = NAMA TOOL DOANG
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Tool
+local Mouse
+local Selected
+local Original = {}
+
+--================ GUI =================
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "DeleteGui"
+Gui.ResetOnSpawn = false
+Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local Yes = Instance.new("TextButton")
+Yes.Size = UDim2.new(0,120,0,45)
+Yes.Position = UDim2.new(1,-260,0.5,-30)
+Yes.Text = "YES"
+Yes.BackgroundColor3 = Color3.fromRGB(200,0,0)
+Yes.TextColor3 = Color3.new(1,1,1)
+Yes.Visible = false
+Yes.Parent = Gui
+
+local No = Instance.new("TextButton")
+No.Size = UDim2.new(0,120,0,45)
+No.Position = UDim2.new(1,-130,0.5,-30)
+No.Text = "NO"
+No.BackgroundColor3 = Color3.fromRGB(60,60,60)
+No.TextColor3 = Color3.new(1,1,1)
+No.Visible = false
+No.Parent = Gui
+
+--================ FUNCTION =================
+local function reset()
+	if Selected and Original[Selected] then
+		Selected.Color = Original[Selected].Color
+		Selected.Transparency = Original[Selected].Transparency
+	end
+	Selected = nil
+	Original = {}
+	Yes.Visible = false
+	No.Visible = false
+end
+
+local function createTool()
+	if Tool then Tool:Destroy() end
+
+	Tool = Instance.new("Tool")
+	Tool.Name = "DeleteTool" -- NAMA DOANG
+	Tool.RequiresHandle = false
+	Tool.CanBeDropped = false
+	Tool.Parent = LocalPlayer.Backpack
+
+	Tool.Equipped:Connect(function(m)
+		Mouse = m
+	end)
+
+	Tool.Unequipped:Connect(function()
+		reset()
+	end)
+
+	Tool.Activated:Connect(function()
+		if not Mouse then return end
+		local t = Mouse.Target
+		if not t or not t:IsA("BasePart") then return end
+
+		if Selected then reset() end
+
+		Selected = t
+		Original[t] = {
+			Color = t.Color,
+			Transparency = t.Transparency
+		}
+
+		t.Color = Color3.fromRGB(255,0,0)
+		t.Transparency = 0.3
+
+		Yes.Visible = true
+		No.Visible = true
+	end)
+end
+
+--================ BUTTON =================
+No.MouseButton1Click:Connect(function()
+	reset()
+end)
+
+Yes.MouseButton1Click:Connect(function()
+	if Selected then
+		Selected:Destroy() -- CLIENT ONLY (PER ORANG)
+	end
+	reset()
+end)
+
+--================ FIX INTI =================
+local function onCharacter()
+	repeat task.wait() until LocalPlayer:FindFirstChild("Backpack")
+	createTool()
+end
+
+LocalPlayer.CharacterAdded:Connect(onCharacter)
+if LocalPlayer.Character then
+	onCharacter()
+end
