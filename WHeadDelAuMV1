@@ -1,0 +1,745 @@
+--== 700+ Line ==--
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+------------------------------------------------
+-- DRAG FUNCTION
+------------------------------------------------
+local function makeDraggable(frame)
+	local dragging = false
+	local dragStart, startPos
+
+	frame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - dragStart
+			frame.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+end
+
+------------------------------------------------
+-- SAFE CLIENT-SIDE FPS BOOSTER + CHARACTER GLOSSY
+-- OTOMATIS JALAN TANPA TOMBOL
+------------------------------------------------
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+
+local function destroyVisuals(obj)
+	for _, v in ipairs(obj:GetDescendants()) do
+		if v:IsA("Texture") or v:IsA("Decal") then
+			pcall(function() v:Destroy() end)
+		end
+	end
+end
+
+destroyVisuals(Workspace)
+destroyVisuals(Lighting)
+
+Workspace.DescendantAdded:Connect(function(v)
+	if v:IsA("Texture") or v:IsA("Decal") then
+		task.wait()
+		pcall(function() v:Destroy() end)
+	end
+end)
+
+Lighting.DescendantAdded:Connect(function(v)
+	if v:IsA("Texture") or v:IsA("Decal") then
+		task.wait()
+		pcall(function() v:Destroy() end)
+	end
+end)
+
+pcall(function()
+	Lighting.GlobalShadows = false
+	Lighting.FogEnd = 9e9
+	Lighting.Brightness = 1
+	Lighting.EnvironmentDiffuseScale = 0
+	Lighting.EnvironmentSpecularScale = 0
+end)
+
+for _, v in ipairs(Lighting:GetChildren()) do
+	if v:IsA("BloomEffect")
+		or v:IsA("SunRaysEffect")
+		or v:IsA("ColorCorrectionEffect")
+		or v:IsA("DepthOfFieldEffect")
+		or v:IsA("Atmosphere") then
+		pcall(function() v:Destroy() end)
+	end
+end
+
+for _, obj in ipairs(Workspace:GetDescendants()) do
+	if (obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam"))
+		and not obj:IsDescendantOf(LocalPlayer.Character) then
+		pcall(function() obj:Destroy() end)
+	end
+end
+
+for _, part in ipairs(Workspace:GetDescendants()) do
+	if part:IsA("BasePart") and not part:IsDescendantOf(LocalPlayer.Character) then
+		part.Material = Enum.Material.SmoothPlastic
+		part.Reflectance = 0
+	end
+end
+
+local function makeCharacterGlossy(obj)
+	for _, part in ipairs(obj:GetDescendants()) do
+		if part:IsA("BasePart") then
+			pcall(function()
+				part.Material = Enum.Material.SmoothPlastic
+				part.Reflectance = 0.2
+			end)
+		end
+	end
+end
+
+local function applyCharacter(character)
+	makeCharacterGlossy(character)
+end
+
+local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+applyCharacter(character)
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+	task.wait(0.5)
+	applyCharacter(char)
+end)
+
+------------------------------------------------
+-- SCREEN GUI
+------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "Refexe4KGui"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+------------------------------------------------
+-- TOGGLE IMAGEBUTTON
+------------------------------------------------
+local Toggle = Instance.new("ImageButton")
+Toggle.Parent = gui
+Toggle.Size = UDim2.new(0,50,0,50)
+Toggle.Position = UDim2.new(0,20,0.5,-26)
+Toggle.Image = ""
+Toggle.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Toggle.BorderSizePixel = 0
+Toggle.Active = true
+Toggle.AutoButtonColor = false
+
+Instance.new("UICorner", Toggle).CornerRadius = UDim.new(1,0)
+
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Parent = Toggle
+ToggleStroke.Color = Color3.fromRGB(120,190,255)
+ToggleStroke.Thickness = 3
+ToggleStroke.Transparency = 0.1
+
+makeDraggable(Toggle)
+
+------------------------------------------------
+-- MAIN FRAME
+------------------------------------------------
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = gui
+MainFrame.Size = UDim2.new(0,250,0,350)
+MainFrame.Position = UDim2.new(0.5,0,0.5,0)
+MainFrame.AnchorPoint = Vector2.new(0.5,0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = false
+MainFrame.Active = true
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,14)
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Parent = MainFrame
+MainStroke.Color = Color3.fromRGB(0,0,0)
+MainStroke.Thickness = 3
+MainStroke.Transparency = 0.1
+
+makeDraggable(MainFrame)
+
+local mainscale = Instance.new("UIScale")
+mainscale.Parent = MainFrame
+mainscale.Scale = 0
+
+------------------------------------------------
+-- UIListLayout
+------------------------------------------------
+local listLayout = Instance.new("UIListLayout")
+listLayout.Parent = MainFrame
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0,5)
+listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+listLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+
+------------------------------------------------
+-- TITLE
+------------------------------------------------
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.Size = UDim2.new(1,0,0,50)
+Title.BackgroundTransparency = 1
+Title.Text = "refexe4k hub"
+Title.TextScaled = true
+Title.TextColor3 = Color3.new(1,1,1)
+Title.LayoutOrder = 0
+
+local fingerfont = Font.new("rbxassetid://12187375716") -- Font ID
+
+Title.FontFace = fingerfont
+
+------------------------------------------------
+-- ANIMATION
+------------------------------------------------
+local openTween = TweenService:Create(
+	mainscale,
+	TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+	{Scale = 1}
+)
+
+local closeTween = TweenService:Create(
+	mainscale,
+	TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+	{Scale = 0}
+)
+
+local opened = false
+
+Toggle.MouseButton1Click:Connect(function()
+	if not opened then
+		MainFrame.Visible = true
+		mainscale.Scale = 0
+		openTween:Play()
+		opened = true
+	else
+		closeTween:Play()
+		closeTween.Completed:Once(function()
+			MainFrame.Visible = false
+		end)
+		opened = false
+	end
+end)
+--
+--
+--
+-- CLIENT SIDE GUI SCRIPT (SAFE MERGE)
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local localPlayer = Players.LocalPlayer
+
+--------------------------------------------------
+-- MAIN GUI
+--------------------------------------------------
+
+local cornerMain = Instance.new("UICorner")
+cornerMain.CornerRadius = UDim.new(0,14)
+cornerMain.Parent = MainFrame
+
+local layoutMain = Instance.new("UIListLayout")
+layoutMain.Parent = MainFrame
+layoutMain.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layoutMain.Padding = UDim.new(0,12)
+
+local paddingMain = Instance.new("UIPadding")
+paddingMain.Parent = MainFrame
+paddingMain.PaddingTop = UDim.new(0,20)
+
+--------------------------------------------------
+-- BUTTON Enlarged Head
+--------------------------------------------------
+local buttonEnlargedHead = Instance.new("TextButton")
+buttonEnlargedHead.Parent = MainFrame
+buttonEnlargedHead.Size = UDim2.new(0,200,0,40)
+buttonEnlargedHead.Text = "Enlarged Head : OFF"
+buttonEnlargedHead.FontFace = fingerfont
+buttonEnlargedHead.TextSize = 14
+buttonEnlargedHead.TextColor3 = Color3.new(0,0,0)
+buttonEnlargedHead.BackgroundColor3 = Color3.fromRGB(230,230,230)
+buttonEnlargedHead.TextScaled = true
+
+local cornerBtn1 = Instance.new("UICorner")
+cornerBtn1.CornerRadius = UDim.new(0,10)
+cornerBtn1.Parent = buttonEnlargedHead
+
+--------------------------------------------------
+-- BUTTON Delete Tool
+--------------------------------------------------
+local buttonDeleteTool = Instance.new("TextButton")
+buttonDeleteTool.Parent = MainFrame
+buttonDeleteTool.Size = UDim2.new(0,200,0,40)
+buttonDeleteTool.Text = "Delete Tool"
+buttonDeleteTool.FontFace = fingerfont
+buttonDeleteTool.TextSize = 14
+buttonDeleteTool.TextColor3 = Color3.new(0,0,0)
+buttonDeleteTool.BackgroundColor3 = Color3.fromRGB(230,230,230)
+buttonDeleteTool.TextScaled = true
+
+local cornerBtn2 = Instance.new("UICorner")
+cornerBtn2.CornerRadius = UDim.new(0,10)
+cornerBtn2.Parent = buttonDeleteTool
+
+--------------------------------------------------
+-- STATE Enlarged Head
+--------------------------------------------------
+local enlargedHeadRunning = false
+local headGuiRef = nil
+local restoreAllHeads = nil
+
+--------------------------------------------------
+-- 🔥 ENLARGED HEAD SCRIPT (ASLI, LOGIC TIDAK DIUBAH)
+--------------------------------------------------
+local function startEnlargedHeadScript()
+	if enlargedHeadRunning then return end
+	enlargedHeadRunning = true
+
+	local Players = game:GetService("Players")
+	local UserInputService = game:GetService("UserInputService")
+	local LocalPlayer = Players.LocalPlayer
+
+	local HEAD_SIZE = Vector3.new(5,5,5)
+	local HEAD_TRANSPARENCY = 0.7
+	local TOGGLE_KEY = Enum.KeyCode.Insert
+
+	local Enlarged = true
+	local OriginalData = {}
+	local Whitelist = {}
+
+	local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+	local whitegui = Instance.new("ScreenGui")
+	whitegui.Name = "HeadWhitelistGui"
+	whitegui.ResetOnSpawn = false
+	whitegui.Parent = playerGui
+	headGuiRef = whitegui
+
+	local frame = Instance.new("Frame")
+	frame.Parent = whitegui
+	frame.Size = UDim2.fromOffset(300,140)
+	frame.Position = UDim2.fromScale(0.5,0.5)
+	frame.AnchorPoint = Vector2.new(0.5,0.5)
+	frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+	frame.Active = true
+	frame.Draggable = true
+	frame.BorderSizePixel = 0
+
+	local title = Instance.new("TextLabel")
+	title.Parent = frame
+	title.Size = UDim2.new(1,0,0,30)
+	title.BackgroundTransparency = 1
+	title.Text = "HEAD WHITELIST"
+	title.TextColor3 = Color3.new(1,1,1)
+	title.FontFace = fingerfont
+	title.TextSize = 14
+	title.TextScaled = true
+
+	local box = Instance.new("TextBox")
+	box.Parent = frame
+	box.Size = UDim2.new(1,-20,0,35)
+	box.Position = UDim2.fromOffset(10,40)
+	box.PlaceholderText = "username / del username"
+	box.Text = ""
+	box.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	box.TextColor3 = Color3.new(1,1,1)
+	box.FontFace = fingerfont
+	box.TextSize = 14
+	box.ClearTextOnFocus = false
+	box.TextScaled = true
+
+	local status = Instance.new("TextLabel")
+	status.Parent = frame
+	status.Size = UDim2.new(1,-20,0,25)
+	status.Position = UDim2.fromOffset(10,85)
+	status.BackgroundTransparency = 1
+	status.Text = "Ready"
+	status.TextColor3 = Color3.fromRGB(180,180,180)
+	status.FontFace = fingerfont
+	status.TextSize = 13
+	status.TextXAlignment = Enum.TextXAlignment.Left
+	status.TextScaled = true
+
+	--------------------------------------------------
+	-- HEAD LOGIC
+	--------------------------------------------------
+	local function setHeadState(player, enlarge)
+		if player == LocalPlayer then return end
+		if Whitelist[player.Name] then enlarge = false end
+
+		local char = player.Character
+		if not char then return end
+
+		local head = char:FindFirstChild("Head")
+		if not head or not head:IsA("BasePart") then return end
+
+		local mesh = head:FindFirstChildOfClass("SpecialMesh")
+
+		if not OriginalData[player] then
+			OriginalData[player] = {
+				Size = head.Size,
+				Transparency = head.Transparency,
+				Material = head.Material,
+				Color = head.Color,
+				Mesh = mesh and mesh:Clone()
+			}
+		end
+
+		if enlarge then
+			head.Size = HEAD_SIZE
+			head.Transparency = HEAD_TRANSPARENCY
+			head.Material = Enum.Material.Neon
+			head.Color = Color3.fromRGB(255,0,0)
+			if mesh then mesh:Destroy() end
+		else
+			local data = OriginalData[player]
+			if not data then return end
+			head.Size = data.Size
+			head.Transparency = data.Transparency
+			head.Material = data.Material
+			head.Color = data.Color
+			if not head:FindFirstChildOfClass("SpecialMesh") and data.Mesh then
+				data.Mesh:Clone().Parent = head
+			end
+		end
+
+		head.CanCollide = false
+	end
+
+	restoreAllHeads = function()
+		for p,_ in pairs(OriginalData) do
+			setHeadState(p,false)
+		end
+	end
+
+	for _,p in ipairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer then
+			p.CharacterAdded:Connect(function()
+				task.wait(1)
+				setHeadState(p,Enlarged)
+			end)
+			if p.Character then
+				setHeadState(p,Enlarged)
+			end
+		end
+	end
+
+	Players.PlayerAdded:Connect(function(p)
+		p.CharacterAdded:Connect(function()
+			task.wait(1)
+			setHeadState(p,Enlarged)
+		end)
+	end)
+
+	UserInputService.InputBegan:Connect(function(input,gp)
+		if gp then return end
+		if input.KeyCode == TOGGLE_KEY then
+			Enlarged = not Enlarged
+			for _,p in ipairs(Players:GetPlayers()) do
+				setHeadState(p,Enlarged)
+			end
+		end
+	end)
+
+	box.FocusLost:Connect(function(enter)
+		if not enter then return end
+		local text = box.Text
+		box.Text = ""
+		if text == "" then return end
+
+		local args = text:split(" ")
+		local cmd = args[1]
+		local targetName = args[2] or args[1]
+		local target = Players:FindFirstChild(targetName)
+		if not target then
+			status.Text = "ERROR: Player not found"
+			status.TextColor3 = Color3.fromRGB(255,80,80)
+			return
+		end
+
+		if cmd == "del" then
+			Whitelist[targetName] = nil
+			status.Text = "REMOVED: "..targetName
+			status.TextColor3 = Color3.fromRGB(255,200,0)
+		else
+			Whitelist[targetName] = true
+			status.Text = "WHITELISTED: "..targetName
+			status.TextColor3 = Color3.fromRGB(80,255,80)
+		end
+
+		setHeadState(target,Enlarged)
+	end)
+end
+
+local function stopEnlargedHeadScript()
+	enlargedHeadRunning = false
+	if restoreAllHeads then
+		restoreAllHeads()
+	end
+	if headGuiRef then
+		headGuiRef:Destroy()
+		headGuiRef = nil
+	end
+end
+
+--------------------------------------------------
+-- DELETE TOOL SCRIPT (AMAN)
+--------------------------------------------------
+local function runDeleteToolScript()
+	local player = Players.LocalPlayer
+
+	while not player.Character or not player:FindFirstChild("Backpack") do
+		RunService.Heartbeat:Wait()
+	end
+
+	local backpack = player.Backpack
+
+	if backpack:FindFirstChild("Delete") then
+		backpack.Delete:Destroy()
+	end
+	if player.PlayerGui:FindFirstChild("DeleteGUI") then
+		player.PlayerGui.DeleteGUI:Destroy()
+	end
+
+	local tool = Instance.new("Tool")
+	tool.Name = "Delete"
+	tool.RequiresHandle = false
+	tool.CanBeDropped = false
+	tool.Parent = backpack
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "DeleteGUI"
+	gui.ResetOnSpawn = false
+	gui.Parent = player.PlayerGui
+
+	local mainFrame = Instance.new("Frame")
+	mainFrame.Size = UDim2.new(0,322,0,69)
+	mainFrame.Position = UDim2.new(1,-332,0.5,-34)
+	mainFrame.BackgroundColor3 = Color3.fromRGB(64,64,64)
+	mainFrame.Visible = false
+	mainFrame.Parent = gui
+
+	local function createButton(bgColor,text,pos)
+		local c = Instance.new("Frame")
+		c.Size = UDim2.new(0,129,0,50)
+		c.Position = pos
+		c.BackgroundTransparency = 1
+		c.Parent = mainFrame
+
+		local b = Instance.new("TextButton")
+		b.Size = UDim2.new(1,0,1,0)
+		b.BackgroundColor3 = bgColor
+		b.Text = text
+		b.Parent = c
+		b.FontFace = fingerfont
+		b.TextScaled = true
+
+		return b
+	end
+
+	local yes = createButton(Color3.fromRGB(0,255,0),"Yes",UDim2.new(0,10,0.5,-25))
+	local cancel = createButton(Color3.fromRGB(255,0,0),"Cancel",UDim2.new(1,-139,0.5,-25))
+
+	local mouse = player:GetMouse()
+	local selected = nil
+	local originalColor = nil
+
+	local function reset()
+		if selected then
+			selected.Color = originalColor
+		end
+		selected = nil
+		mainFrame.Visible = false
+	end
+
+	tool.Activated:Connect(function()
+		local target = mouse.Target
+		if target and target:IsA("BasePart") then
+			if selected then selected.Color = originalColor end
+			selected = target
+			originalColor = target.Color
+			target.Color = Color3.fromRGB(255,0,0)
+			mainFrame.Visible = true
+		end
+	end)
+
+	yes.MouseButton1Click:Connect(function()
+		if selected then
+			selected:Destroy()
+			reset()
+		end
+	end)
+
+	cancel.MouseButton1Click:Connect(reset)
+	tool.Unequipped:Connect(reset)
+end
+
+--------------------------------------------------
+-- BUTTON ACTIONS
+--------------------------------------------------
+buttonEnlargedHead.MouseButton1Click:Connect(function()
+	if enlargedHeadRunning then
+		buttonEnlargedHead.Text = "Enlarged Head : OFF"
+		stopEnlargedHeadScript()
+	else
+		buttonEnlargedHead.Text = "Enlarged Head : ON"
+		startEnlargedHeadScript()
+	end
+end)
+
+buttonDeleteTool.MouseButton1Click:Connect(function()
+	runDeleteToolScript()
+end)
+--
+--
+--
+--AUTO MS SCRIPT--
+--
+-- CLIENT SIDE GUI + AUTO MS (SAFE EXECUTOR, FULL MERGE)
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local LocalPlayer = Players.LocalPlayer
+
+--------------------------------------------------
+-- AUTO MS SCRIPT (ORIGINAL LOGIC, UNCHANGED)
+--------------------------------------------------
+
+local AutoMS_Running = false
+
+local function pressE()
+	VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+	task.wait(0.1)
+	VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+local function findTool(name)
+	if LocalPlayer.Backpack:FindFirstChild(name) then
+		return LocalPlayer.Backpack:FindFirstChild(name)
+	elseif LocalPlayer.Character and LocalPlayer.Character:FindFirstChild(name) then
+		return LocalPlayer.Character:FindFirstChild(name)
+	end
+	return nil
+end
+
+local function equipTool(tool)
+	if tool and LocalPlayer.Character then
+		tool.Parent = LocalPlayer.Character
+	end
+end
+
+local function runAutoMS()
+	while AutoMS_Running do
+		-- Step 1: Water
+		local water = findTool("Water")
+		if water then
+			equipTool(water)
+			task.wait(0.2)
+			pressE()
+			task.wait(22)
+		end
+
+		if not AutoMS_Running then break end
+
+		-- Step 2: Sugar Block Bag
+		local sugar = findTool("Sugar Block Bag")
+		if sugar then
+			equipTool(sugar)
+			task.wait(0.2)
+			pressE()
+			task.wait(1)
+
+			-- Step 3: Gelatin
+			local gelatin = findTool("Gelatin")
+			if gelatin then
+				equipTool(gelatin)
+				task.wait(0.2)
+				pressE()
+			end
+		end
+
+		if not AutoMS_Running then break end
+
+		-- Step 4: Fermentation wait
+		task.wait(47)
+
+		if not AutoMS_Running then break end
+
+		-- Step 5: Empty Bag
+		local empty = findTool("Empty Bag")
+		if empty then
+			equipTool(empty)
+			task.wait(0.2)
+			pressE()
+		end
+	end
+end
+
+--------------------------------------------------
+-- GUI
+--------------------------------------------------
+--------------------------------------------------
+-- AUTO MS BUTTON
+--------------------------------------------------
+
+local AutoMsCodeuni = Instance.new("TextButton")
+AutoMsCodeuni.Name = "AutoMsCodeuni"
+AutoMsCodeuni.Parent = MainFrame
+AutoMsCodeuni.Size = UDim2.new(0, 200, 0, 40)
+AutoMsCodeuni.Position = UDim2.new(0.5, 0, 0, 40)
+AutoMsCodeuni.AnchorPoint = Vector2.new(0.5, 0)
+AutoMsCodeuni.Text = "AUTO MS : OFF"
+AutoMsCodeuni.FontFace = fingerfont
+AutoMsCodeuni.TextSize = 16
+AutoMsCodeuni.TextColor3 = Color3.fromRGB(255,255,255)
+AutoMsCodeuni.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+AutoMsCodeuni.TextScaled = true
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.Parent = AutoMsCodeuni
+
+--------------------------------------------------
+-- BUTTON LOGIC
+--------------------------------------------------
+
+AutoMsCodeuni.MouseButton1Click:Connect(function()
+	if AutoMS_Running then
+		AutoMS_Running = false
+		AutoMsCodeuni.Text = "AUTO MS : OFF"
+		AutoMsCodeuni.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+	else
+		AutoMS_Running = true
+		AutoMsCodeuni.Text = "AUTO MS : ON"
+		AutoMsCodeuni.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+		task.spawn(runAutoMS)
+	end
+end)
