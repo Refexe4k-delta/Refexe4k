@@ -1,0 +1,158 @@
+-- Force CameraMode Classic (refresh tiap 0.5 detik)
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ScreenGui
+local screenGui = Instance.new("ScreenGui")
+local uicon = Instance.new("UISizeConstraint")
+local textcon = Instance.new("UITextSizeConstraint")
+screenGui.Name = "ClassicCameraGui"
+screenGui.IgnoreGuiInset = true
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- TextLabel
+local textLabel = Instance.new("TextLabel")
+textLabel.Name = "StatusLabel"
+textLabel.Parent = screenGui
+uicon.Parent = textLabel
+textcon.Parent = textLabel
+
+textLabel.BackgroundTransparency = 1
+textLabel.Size = UDim2.new(0.39, 0, 0.034, 0)
+textLabel.Position = UDim2.new(0.008, 0, 0.11, 0)
+textLabel.ZIndex = 999
+
+-- FontFace dari asset toolbox + Bold
+textLabel.FontFace = Font.new("rbxassetid://12187375422", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+
+-- RichText aktif
+textLabel.RichText = true
+textLabel.Text = 'Classic Camera Mode : Enabled | With Toggle | <stroke color="rgb(0,0,0)"><font color="rgb(255,0,0)">Refexe4k</font></stroke>'
+
+textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+textLabel.TextScaled = true
+textLabel.TextTransparency = 0.5
+
+textLabel.TextStrokeColor3 = Color3.fromRGB(255, 255, 255)
+textLabel.TextStrokeTransparency = 0.5
+
+textLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+--// GUI
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "Button"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Parent = gui
+button.BackgroundColor3 = Color3.fromRGB(0,0,0)
+button.BackgroundTransparency = 0.5
+button.Position = UDim2.new(0.857,0,0.46,0)
+button.Size = UDim2.new(0.15,0,0.081,0)
+button.ZIndex = 999
+button.Text = "Camera Mode : Normal"
+button.TextColor3 = Color3.new(1,1,1)
+button.TextScaled = true
+button.FontFace = Font.new("rbxassetid://12187375422", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,14)
+corner.Parent = button
+
+--// GUIDE LABEL
+local guide = Instance.new("TextLabel")
+guide.Name = "Guide"
+guide.Parent = gui
+guide.BackgroundTransparency = 1
+guide.Position = UDim2.new(0.857,0,0.541,0)
+guide.Size = UDim2.new(0.15,0,0.04,0)
+guide.Text = 'Click "L" to toggle'
+guide.TextColor3 = Color3.new(1,1,1)
+guide.TextScaled = true
+guide.FontFace = Font.new("rbxassetid://12187375422", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+guide.ZIndex = 999
+
+--// SETTINGS
+local SCROLL_SPEED = 4
+local MIN_DISTANCE = 0
+local MAX_DISTANCE = math.huge
+
+--// SERVICES
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local camera = workspace.CurrentCamera
+
+--// STATE
+local zoomDistance = 0
+local baseCFrame = camera.CFrame
+local enabled = false
+local renderConnection
+local inputConnection
+
+--// CAMERA ON
+local function startCamera()
+	camera.CameraType = Enum.CameraType.Scriptable
+
+	inputConnection = UIS.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseWheel then
+			zoomDistance = zoomDistance - (input.Position.Z * SCROLL_SPEED)
+
+			if zoomDistance < MIN_DISTANCE then
+				zoomDistance = MIN_DISTANCE
+			end
+			if zoomDistance > MAX_DISTANCE then
+				zoomDistance = MAX_DISTANCE
+			end
+		end
+	end)
+
+	renderConnection = RunService.RenderStepped:Connect(function()
+		baseCFrame = camera.CFrame
+		local lookVector = baseCFrame.LookVector
+		local newPos = baseCFrame.Position - (lookVector * zoomDistance)
+		camera.CFrame = CFrame.new(newPos, newPos + lookVector)
+	end)
+end
+
+--// CAMERA OFF
+local function stopCamera()
+	if renderConnection then
+		renderConnection:Disconnect()
+		renderConnection = nil
+	end
+	if inputConnection then
+		inputConnection:Disconnect()
+		inputConnection = nil
+	end
+
+	camera.CameraType = Enum.CameraType.Custom
+end
+
+--// TOGGLE (SATU SUMBER LOGIC)
+local function toggleCamera()
+	enabled = not enabled
+
+	if enabled then
+		button.Text = "Camera Mode : No FirstPerson"
+		startCamera()
+	else
+		button.Text = "Camera Mode : Normal"
+		stopCamera()
+	end
+end
+
+-- klik tombol
+button.MouseButton1Click:Connect(toggleCamera)
+
+-- tekan L (PC)
+UIS.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Enum.KeyCode.L then
+		toggleCamera()
+	end
+end)
